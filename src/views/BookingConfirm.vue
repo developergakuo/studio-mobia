@@ -37,9 +37,18 @@
           Pay <strong>KES {{ booking.depositAmount?.toLocaleString() }}</strong> via M-Pesa to confirm your slot.
         </div>
 
-        <!-- TODO: wire up Pesapal payment button -->
-        <button v-if="!booking.depositPaid" class="btn-primary w-full text-lg">
-          Pay KES {{ booking.depositAmount?.toLocaleString() }} Deposit via M-Pesa
+        <div v-if="paymentError" class="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-red-700 text-sm">
+          {{ paymentError }}
+        </div>
+
+        <button
+          v-if="!booking.depositPaid"
+          class="btn-primary w-full text-lg"
+          :disabled="paying"
+          @click="startPayment"
+        >
+          <span v-if="paying">Redirecting to payment...</span>
+          <span v-else>Pay KES {{ booking.depositAmount?.toLocaleString() }} Deposit via M-Pesa</span>
         </button>
       </div>
       <div v-else class="text-slate-400">Booking not found.</div>
@@ -49,11 +58,40 @@
 
 <script setup>
 import { useRoute } from 'vue-router';
-import { useQuery } from '@vue/apollo-composable';
-import { computed } from 'vue';
-import { GET_BOOKING_BY_REF } from '@/shared/apollo/queryStrings/bookings.js';
+import { useQuery, useMutation } from '@vue/apollo-composable';
+import { computed, ref } from 'vue';
+import { GET_BOOKING_BY_REF, PESAPAL_BOOKING_REQUEST } from '@/shared/apollo/queryStrings/bookings.js';
 
 const route = useRoute();
 const { result, loading } = useQuery(GET_BOOKING_BY_REF, { referenceCode: route.params.ref });
 const booking = computed(() => result.value?.bookingByRef);
+
+const paying = ref(false);
+const paymentError = ref('');
+
+const { mutate: requestPayment } = useMutation(PESAPAL_BOOKING_REQUEST);
+
+async function startPayment() {
+  if (!booking.value?.id) return;
+  paying.value = true;
+  paymentError.value = '';
+
+  try {
+    const callbackUrl = `${window.location.origin}/booking/payment-complete`;
+    const { data } = await requestPayment({
+      bookingId: booking.value.id,
+      callback_url: callbackUrl,
+    });
+
+    const redirectUrl = data?.pesapalBookingRequest?.redirectUrl;
+    if (redirectUrl) {
+      window.location.href = redirectUrl;
+    } else {
+      throw new Error('No redirect URL returned from payment gateway');
+    }
+  } catch (err) {
+    paymentError.value = err.message || 'Payment initiation failed. Please try again.';
+    paying.value = false;
+  }
+}
 </script>

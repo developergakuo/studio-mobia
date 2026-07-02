@@ -17,6 +17,15 @@ export const CREATE_BOOKING = gql`
     }
 `;
 
+export const PESAPAL_BOOKING_REQUEST = gql`
+    mutation PesapalBookingRequest($bookingId: ID!, $callback_url: String!) {
+        pesapalBookingRequest(bookingId: $bookingId, callback_url: $callback_url) {
+            redirectUrl
+            orderTrackingId
+        }
+    }
+`;
+
 export const GET_BOOKING_BY_REF = gql`
     query GetBookingByRef($referenceCode: String!) {
         bookingByRef(referenceCode: $referenceCode) {

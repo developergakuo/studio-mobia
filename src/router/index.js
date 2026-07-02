@@ -9,6 +9,7 @@ const router = createRouter({
         { path: '/gallery', component: () => import('../views/Gallery.vue') },
         { path: '/book/:serviceId', component: () => import('../views/Booking.vue') },
         { path: '/booking/confirm/:ref', component: () => import('../views/BookingConfirm.vue') },
+        { path: '/booking/payment-complete', component: () => import('../views/PaymentComplete.vue') },
         { path: '/contact', component: () => import('../views/Contact.vue') },
     ],
     scrollBehavior: () => ({ top: 0 }),
